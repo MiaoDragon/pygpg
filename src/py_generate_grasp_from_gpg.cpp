@@ -11,16 +11,16 @@ std::vector<Grasp> grasp_generation(const Eigen::MatrixXf &pc) {
     HandSearch::Parameters hand_search_params;
 
     // Read hand geometry parameters.
-    hand_search_params.finger_width_ = 0.01;
-    hand_search_params.hand_outer_diameter_ = 0.12;
+    hand_search_params.finger_width_ = 0.0065;
+    hand_search_params.hand_outer_diameter_ = 0.098;
     hand_search_params.hand_depth_ = 0.06;
     hand_search_params.hand_height_ = 0.02;
-    hand_search_params.init_bite_ = 0.01;
+    hand_search_params.init_bite_ = 0.02;
 
     // Read local hand search parameters.
     hand_search_params.nn_radius_frames_ = 0.01;
-    hand_search_params.num_orientations_ = 8;
-    hand_search_params.num_samples_ = 10;
+    hand_search_params.num_orientations_ = 16;
+    hand_search_params.num_samples_ = 160;
     hand_search_params.num_threads_ = 20;
     hand_search_params.rotation_axis_ = 2; // cannot be changed
 
@@ -62,7 +62,10 @@ std::vector<Grasp> grasp_generation(const Eigen::MatrixXf &pc) {
     candidates_generator_->preprocessPointCloud(*cloud_camera_);
 
     std::vector<Grasp> grasps = candidates_generator_->generateGraspCandidates(*cloud_camera_);
-    return grasps;
+    
+    // * evaluate teh candidates
+    std::vector<Grasp> evaluated_grasps = candidates_generator_->reevaluateHypotheses(*cloud_camera_, grasps);
+    return evaluated_grasps;
 }
 
 std::vector<Grasp> generate_grasps(Eigen::MatrixXf &pc) {
@@ -86,5 +89,10 @@ PYBIND11_MODULE(pygpg, m) {
             .def("get_grasp_binormal", &Grasp::getBinormal, "get grasp binormal")
             .def("get_grasp_axis", &Grasp::getAxis, "get grasp axis")
             .def("get_grasp_width", &Grasp::getGraspWidth, "get grasp width")
+            .def("get_sample", &Grasp::getSample, "get center of the point neighborhood associated with the grasp.")
+            .def("get_score", &Grasp::getScore, "Get the score of the grasp..")
+            .def("is_full_antipodal", &Grasp::isFullAntipodal, "true if the grasp is antipodal, false otherwise")
+            .def("is_half_antipodal", &Grasp::isHalfAntipodal, "true if the grasp is indeterminate, false otherwise")
+
       ;
 }
